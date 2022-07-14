@@ -21,9 +21,9 @@ const panopticPool = new ethers.Contract(
 //CLI COMMANDS
 const program = new Command();
 program
-  .name("panoptic-liquidator-bot")
+  .name("panoptic-liquidation-bot")
   .description(
-    `panopticbot cli allows to run and monitor panoptic liquidator bot.
+    `panopticbot cli allows to run and monitor panoptic liquidation bot.
     `
   )
   .version("0.0.1");
@@ -69,6 +69,21 @@ program
     });
 
     task.start();
+  });
+
+program
+  .command("info")
+  .description("Display general protocol info")
+  .action(async (str, options) => {
+    const wallet = await connectWallet(process.env.PRIVATE_KEY);
+    const test = await panopticPool.pool();
+
+    console.log(`
+    -network name : ${provider.network.name}  
+    -chainId : ${provider.network.chainId}
+    -panoptic pool address : ${process.env.PANOPTIC_POOL_ADDRESS}
+    - test : ${test}
+    `);
   });
 
 program.parse();
