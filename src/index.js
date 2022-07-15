@@ -3,7 +3,7 @@ require("dotenv").config();
 const cron = require("node-cron");
 const { Command } = require("commander");
 const ethers = require("ethers");
-const { connectWallet } = require("./utils");
+const { connectWallet, getPools } = require("./utils");
 const consts = require("./consts");
 const chalk = require("chalk");
 
@@ -81,9 +81,16 @@ program
     console.log(`
     -network name : ${provider.network.name}  
     -chainId : ${provider.network.chainId}
-    -panoptic pool address : ${process.env.PANOPTIC_POOL_ADDRESS}
-    - test : ${test}
+ 
     `);
+  });
+
+program
+  .command("pools")
+  .description("Query list of pools agains subgraph")
+  .action(async (str, options) => {
+    const data = await getPools();
+    console.log(data);
   });
 
 program.parse();
