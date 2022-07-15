@@ -3,7 +3,7 @@ require("dotenv").config();
 const cron = require("node-cron");
 const { Command } = require("commander");
 const ethers = require("ethers");
-const { connectWallet, getPools } = require("./utils");
+const { connectWallet, getPools, getPositions } = require("./utils");
 const consts = require("./consts");
 const chalk = require("chalk");
 
@@ -90,6 +90,14 @@ program
   .description("Query list of pools agains subgraph")
   .action(async (str, options) => {
     const data = await getPools();
+    console.log(data);
+  });
+
+program
+  .command("positions")
+  .description("Query list of pools agains subgraph")
+  .action(async (str, options) => {
+    const data = await getPositions();
     console.log(data);
   });
 
