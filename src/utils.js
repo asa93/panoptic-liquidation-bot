@@ -2,17 +2,26 @@ const { default: axios } = require("axios");
 const ethers = require("ethers");
 require("dotenv").config();
 
+const panopticHealthAbi = require("../contracts/libraries/PanopticHealth.sol/PanopticHealth.json");
+const uniswapV3PoolAbi = require("../contracts/mocks/MockUniswapV3Pool.sol/MockUniswapV3Pool.json");
+const panopticAbi = require("../contracts/PanopticPool.sol/PanopticPool.json");
+const erc20 = require("../contracts/mocks/MockToken.sol/Token.json");
+
+var provider = new ethers.providers.JsonRpcProvider(process.env.NODE_URL);
+const panopticHealth = new ethers.Contract(
+  process.env.PANOPTIC_HEALH_ADDRESS,
+  panopticHealthAbi.abi,
+  provider
+);
+const panopticPool = new ethers.Contract(
+  process.env.PANOPTIC_POOL_ADDRESS,
+  panopticAbi.abi,
+  provider
+);
+
 module.exports.connectWallet = async function (pKey) {
   let wallet = await new ethers.Wallet(pKey);
   return wallet;
-};
-
-module.exports.liquidate = async function (wallet, panopticPool) {
-  //panopticPool.connect(wallet).liquidate();
-};
-
-module.exports.getUnhealthy = async function (wallet, panopticPool) {
-  //panopticPool.connect(wallet).liquidate();
 };
 
 module.exports.getPools = async function (wallet, panopticPool) {
@@ -27,7 +36,7 @@ module.exports.getPools = async function (wallet, panopticPool) {
       extensions: { headers: null },
     })
     .then((result) => {
-      return result.data.data;
+      return result.data.data.panopticPools;
     })
     .catch((e) => {
       console.log("[ERROR]", e.toString());
@@ -48,9 +57,69 @@ module.exports.getPositions = async function (wallet, panopticPool) {
       extensions: { headers: null },
     })
     .then((result) => {
-      return result.data.data;
+      return result.data.data.tokenPositions;
     })
     .catch((e) => {
       console.log("[ERROR]", e.toString());
     });
+};
+
+module.exports.getHealth = async function (
+  tokenId = "42783768059274734303184140182517364303",
+  numberOfContracts = "10000000",
+  tick = "195016",
+  userAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+) {
+  // call token id : 42783768059274734303184140182517364303n
+  // numberOfContracts 10000000
+  // tick 195016
+
+  const decimals = await panopticHealth.DECIMALS();
+  const COLLATERAL_MARGIN_RATIO =
+    await panopticHealth.COLLATERAL_MARGIN_RATIO();
+
+  let status;
+
+  const uniPool = new ethers.Contract(
+    await panopticPool.pool(),
+    uniswapV3PoolAbi.abi,
+    provider
+  );
+
+  const required = await panopticHealth.getPositionCollateralAtTick(
+    tokenId,
+    numberOfContracts,
+    tick,
+    await uniPool.tickSpacing()
+  );
+
+  const recipientToken0 = new ethers.Contract(
+    await panopticPool.receiptToken1(),
+    erc20.abi,
+    provider
+  );
+
+  const recipientToken1 = new ethers.Contract(
+    await panopticPool.receiptToken1(),
+    erc20.abi,
+    provider
+  );
+
+  //need user address
+  const token0Balance = await recipientToken0.balanceOf(userAddress);
+  const token1Balance = await recipientToken1.balanceOf(userAddress);
+
+  if (token0Balance.gte(required.token0Required)) {
+    status = "HEALTHY";
+  } else if (
+    token0Balance.gte(
+      required.token0Required.mul(COLLATERAL_MARGIN_RATIO).div(decimals)
+    )
+  ) {
+    status = "MARGIN_CALLED";
+  } else {
+    status = "UNDERWATER";
+  }
+
+  return status;
 };

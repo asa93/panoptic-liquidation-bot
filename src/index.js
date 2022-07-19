@@ -3,7 +3,7 @@ require("dotenv").config();
 const cron = require("node-cron");
 const { Command } = require("commander");
 const ethers = require("ethers");
-const { connectWallet, getPools, getPositions } = require("./utils");
+const { connectWallet, getPools, getPositions, getHealth } = require("./utils");
 const consts = require("./consts");
 const chalk = require("chalk");
 
@@ -61,6 +61,18 @@ program
       console.error("Polling PanopticPool for unhealthy positions...");
       try {
         //add liquidation process here
+        const positions = await getPositions();
+        console.log(`Found ${positions.length} positions`);
+
+        for (let i = 0; i < positions.length; i++) {
+          const position = positions[i];
+
+          await healthCheck(position.tokenId);
+
+          const test = await panopticPool.pool();
+
+          //force exercise if conditions are met
+        }
       } catch (e) {
         console.log(chalk.red.bold(`[ERROR] ${e.toString()}`));
         console.log("Exiting CRON task.");
@@ -95,10 +107,18 @@ program
 
 program
   .command("positions")
-  .description("Query list of pools agains subgraph")
+  .description("Query list of token positions agains subgraph")
   .action(async (str, options) => {
     const data = await getPositions();
     console.log(data);
+  });
+
+program
+  .command("health")
+  .description("Query list of token positions agains subgraph")
+  .action(async (str, options) => {
+    const status = await getHealth();
+    console.log("status", status);
   });
 
 program.parse();
