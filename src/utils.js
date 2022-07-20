@@ -128,8 +128,7 @@ async function getStatus(balance, required) {
   return status;
 }
 
-module.exports.decodeID = async function () {
-  const tokenId = BigInt("212922289611937393930017746750408668751");
+module.exports.decodeID = async function (tokenId) {
   const poolId = tokenId & ((BigInt("1") << BigInt("80")) - BigInt("1"));
   return poolId;
 };
