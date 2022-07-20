@@ -24,11 +24,11 @@ module.exports.connectWallet = async function (pKey) {
   return wallet;
 };
 
-module.exports.getPools = async function (wallet, panopticPool) {
+module.exports.getPools = async function () {
   return await axios
     .post(process.env.GRAPH_NODE, {
       query: `query MyQuery { 
-              panopticPools(first: 10) { 
+              panopticPools { 
               poolAddress 
               } }`,
       variables: null,
@@ -43,7 +43,7 @@ module.exports.getPools = async function (wallet, panopticPool) {
     });
 };
 
-module.exports.getPositions = async function (wallet, panopticPool) {
+module.exports.getPositions = async function () {
   return await axios
     .post(process.env.GRAPH_NODE, {
       query: `query MyQuery {
@@ -69,12 +69,6 @@ module.exports.getHealth = async function (
   numberOfContracts = "1000000000000000000",
   userAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 ) {
-  // call token id : 42783768059274734303184140182517364303n
-  // numberOfContracts 10000000
-  // tick 195016
-
-  let status;
-
   const uniPool = new ethers.Contract(
     await panopticPool.pool(),
     uniswapV3PoolAbi.abi,
@@ -146,4 +140,19 @@ module.exports.getPoolFromId = async function (poolId) {
 
     const unipoolAddress = await panopticPool.pool();
   })[0];
+};
+
+module.exports.getPoolFromTokenId = async function (tokenId) {
+  return await module.exports.getPoolFromId(
+    await module.exports.decodeID(tokenId)
+  );
+};
+
+module.exports.liquidate = async function (poolAddress, tokenId) {
+  const panopticPool = new ethers.Contract(
+    poolAddress,
+    panopticAbi.abi,
+    provider
+  );
+  //await panopticPool.liquidate();
 };
