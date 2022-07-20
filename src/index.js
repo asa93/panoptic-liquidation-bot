@@ -67,9 +67,9 @@ program
         for (let i = 0; i < positions.length; i++) {
           const position = positions[i];
 
-          await healthCheck(position.tokenId);
+          console.log("position", position);
 
-          const test = await panopticPool.pool();
+          const status = await getHealth(position.tokenId, position.position);
 
           //force exercise if conditions are met
         }
@@ -115,7 +115,7 @@ program
 
 program
   .command("health")
-  .description("Query list of token positions agains subgraph")
+  .description("Calculate status for position")
   .action(async (str, options) => {
     const status = await getHealth();
     console.log("status", status);

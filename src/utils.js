@@ -65,18 +65,13 @@ module.exports.getPositions = async function (wallet, panopticPool) {
 };
 
 module.exports.getHealth = async function (
-  tokenId = "42783768059274734303184140182517364303",
-  numberOfContracts = "10000000",
-  tick = "195016",
+  tokenId = "212922289611937393930017746750408668751",
+  numberOfContracts = "1000000000000000000",
   userAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 ) {
   // call token id : 42783768059274734303184140182517364303n
   // numberOfContracts 10000000
   // tick 195016
-
-  const decimals = await panopticHealth.DECIMALS();
-  const COLLATERAL_MARGIN_RATIO =
-    await panopticHealth.COLLATERAL_MARGIN_RATIO();
 
   let status;
 
@@ -86,11 +81,13 @@ module.exports.getHealth = async function (
     provider
   );
 
+  const { tick } = await uniPool.slot0();
+
   const required = await panopticHealth.getPositionCollateralAtTick(
     tokenId,
     numberOfContracts,
-    tick,
-    await uniPool.tickSpacing()
+    await uniPool.tickSpacing(),
+    tick
   );
 
   const recipientToken0 = new ethers.Contract(
@@ -109,17 +106,24 @@ module.exports.getHealth = async function (
   const token0Balance = await recipientToken0.balanceOf(userAddress);
   const token1Balance = await recipientToken1.balanceOf(userAddress);
 
-  if (token0Balance.gte(required.token0Required)) {
+  const status0 = await getStatus(token0Balance, required.token0Required);
+  const status1 = await getStatus(token1Balance, required.token1Required);
+
+  return { token0: status0, token1: status1 };
+};
+
+async function getStatus(balance, required) {
+  const decimals = await panopticHealth.DECIMALS();
+  const COLLATERAL_MARGIN_RATIO =
+    await panopticHealth.COLLATERAL_MARGIN_RATIO();
+
+  let status;
+  if (balance.gte(required)) {
     status = "HEALTHY";
-  } else if (
-    token0Balance.gte(
-      required.token0Required.mul(COLLATERAL_MARGIN_RATIO).div(decimals)
-    )
-  ) {
+  } else if (balance.gte(required.mul(COLLATERAL_MARGIN_RATIO).div(decimals))) {
     status = "MARGIN_CALLED";
   } else {
     status = "UNDERWATER";
   }
-
   return status;
-};
+}
