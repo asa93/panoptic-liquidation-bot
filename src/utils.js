@@ -47,7 +47,7 @@ module.exports.getPositions = async function (wallet, panopticPool) {
   return await axios
     .post(process.env.GRAPH_NODE, {
       query: `query MyQuery {
-        tokenPositions(first: 10) {
+        tokenPositions {
           tokenId
           position
         }
@@ -127,3 +127,9 @@ async function getStatus(balance, required) {
   }
   return status;
 }
+
+module.exports.decodeID = async function () {
+  const tokenId = BigInt("212922289611937393930017746750408668751");
+  const poolId = tokenId & ((BigInt("1") << BigInt("80")) - BigInt("1"));
+  return poolId;
+};
