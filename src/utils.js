@@ -130,5 +130,20 @@ async function getStatus(balance, required) {
 
 module.exports.decodeID = async function (tokenId) {
   const poolId = tokenId & ((BigInt("1") << BigInt("80")) - BigInt("1"));
-  return poolId;
+
+  return poolId.toString(16);
+};
+
+module.exports.getPoolFromId = async function (poolId) {
+  return (await module.exports.getPools()).filter(async (pool, i) => {
+    const { poolAddress } = pool;
+
+    const panopticPool = new ethers.Contract(
+      process.env.PANOPTIC_POOL_ADDRESS,
+      panopticAbi.abi,
+      provider
+    );
+
+    const unipoolAddress = await panopticPool.pool();
+  })[0];
 };
