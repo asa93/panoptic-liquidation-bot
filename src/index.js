@@ -3,7 +3,16 @@ require("dotenv").config();
 const cron = require("node-cron");
 const { Command } = require("commander");
 const ethers = require("ethers");
-const { connectWallet, getPools, getPositions, getHealth } = require("./utils");
+const {
+  connectWallet,
+  getPools,
+  getPositions,
+  getHealth,
+  decodeID,
+  getPoolFromId,
+  getPoolFromTokenId,
+  liquidate,
+} = require("./utils");
 const consts = require("./consts");
 const chalk = require("chalk");
 
@@ -69,9 +78,25 @@ program
 
           console.log("position", position);
 
-          const status = await getHealth(position.tokenId, position.position);
+          const poolAddress = await getPoolFromTokenId(
+            BigInt(position.tokenId)
+          );
 
-          //force exercise if conditions are met
+          const status = await getHealth(
+            poolAddress,
+            position.tokenId,
+            position.position
+          );
+
+          if (status.token0 !== "HEALTHY" || status.token1 !== "HEALTHY") {
+            //force exercise if conditions are met
+            console.log("Unhealthy position -> liquidate");
+
+            //call liquidation method
+            await liquidate(poolAddress, tokenId);
+          } else {
+            console.log("status: ", chalk.green(" healthy"));
+          }
         }
       } catch (e) {
         console.log(chalk.red.bold(`[ERROR] ${e.toString()}`));
@@ -113,12 +138,11 @@ program
     console.log(data);
   });
 
-program
-  .command("health")
-  .description("Calculate status for position")
-  .action(async (str, options) => {
-    const status = await getHealth();
-    console.log("status", status);
-  });
+program.command("test").action(async (str, options) => {
+  const poolAddress = await getPoolFromTokenId(
+    BigInt("212676593572601158507419655735142692431")
+  );
+  console.log("poolAddress", poolAddress);
+});
 
 program.parse();

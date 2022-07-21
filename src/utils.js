@@ -9,13 +9,8 @@ const erc20 = require("../contracts/mocks/MockToken.sol/Token.json");
 
 var provider = new ethers.providers.JsonRpcProvider(process.env.NODE_URL);
 const panopticHealth = new ethers.Contract(
-  process.env.PANOPTIC_HEALH_ADDRESS,
+  process.env.PANOPTIC_HEALTH_ADDRESS,
   panopticHealthAbi.abi,
-  provider
-);
-const panopticPool = new ethers.Contract(
-  process.env.PANOPTIC_POOL_ADDRESS,
-  panopticAbi.abi,
   provider
 );
 
@@ -65,10 +60,17 @@ module.exports.getPositions = async function () {
 };
 
 module.exports.getHealth = async function (
+  poolAddress,
   tokenId = "212922289611937393930017746750408668751",
   numberOfContracts = "1000000000000000000",
   userAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 ) {
+  const panopticPool = new ethers.Contract(
+    poolAddress,
+    panopticAbi.abi,
+    provider
+  );
+
   const uniPool = new ethers.Contract(
     await panopticPool.pool(),
     uniswapV3PoolAbi.abi,
@@ -129,16 +131,19 @@ module.exports.decodeID = async function (tokenId) {
 };
 
 module.exports.getPoolFromId = async function (poolId) {
+  console.log("poolId", poolId);
   return (await module.exports.getPools()).filter(async (pool, i) => {
     const { poolAddress } = pool;
 
     const panopticPool = new ethers.Contract(
-      process.env.PANOPTIC_POOL_ADDRESS,
+      poolAddress,
       panopticAbi.abi,
       provider
     );
 
     const unipoolAddress = await panopticPool.pool();
+
+    return unipoolAddress.indexOf(poolId) >= 0;
   })[0];
 };
 
